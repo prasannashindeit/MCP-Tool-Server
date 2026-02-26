@@ -2,6 +2,12 @@
 
 **MCP Security-Tool Server** is a cybersecurity dashboard and API bridge that connects AI models to Kali Linux security tools via the [Model Context Protocol (MCP)](https://modelcontextprotocol.io/). It features a built-in **AI Chat** interface with real-time tool orchestration, multi-provider support, and dynamic tool discovery.
 
+### 📸 Screenshots
+
+| Dashboard | AI Chat |
+|-----------|---------|
+| ![Dashboard](static/images/dashboard.png) | ![AI Chat](static/images/ai-chat.png) |
+
 ## 🚀 Features
 
 - 🤖 **AI Chat Dashboard** — Chat with an AI agent that can orchestrate security tools in real-time directly from your browser
