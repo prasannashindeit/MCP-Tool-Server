@@ -1,22 +1,176 @@
 # MCP Kali Server
 
-**MCP Kali Server** is a lightweight API bridge that connects [MCP clients](https://modelcontextprotocol.io/clients) (e.g: [Claude Desktop](https://code.claude.com/docs/en/desktop) or [5ire](https://github.com/nanbingxyz/5ire)) to the [API server](https://modelcontextprotocol.io/examples) which allows executing commands on a Linux terminal.
+**MCP Kali Server** is a cybersecurity dashboard and API bridge that connects AI models to Kali Linux security tools via the [Model Context Protocol (MCP)](https://modelcontextprotocol.io/). It features a built-in **AI Chat** interface with real-time tool orchestration, multi-provider support, and dynamic tool discovery.
 
-This MCP is able to run terminal commands as well as interacting with web applications using:
+## 🚀 Features
 
-- `Dirb`
-- `enum4linux`
-- `gobuster`
-- `Hydra`
-- `John the Ripper`
-- `Metasploit-Framework`
-- `Nikto`
-- `Nmap`
-- `sqlmap`
-- `WPScan`
-- As well as being able to execute raw commands.
+- 🤖 **AI Chat Dashboard** — Chat with an AI agent that can orchestrate security tools in real-time directly from your browser
+- 🔌 **MCP Protocol** — Standard MCP server for external clients (Claude Desktop, 5ire, Cursor, etc.)
+- 🔍 **Dynamic Tool Discovery** — AI auto-discovers available tools from the MCP server; add a tool once, use it everywhere
+- 📊 **Agent Activity Visibility** — See what the AI is doing: *Thinking → Orchestrating → Analyzing*
+- 🧠 **Multi-Provider AI** — Supports Google Gemini, OpenAI, Anthropic, and Ollama (local)
+- 🔐 **Client-Side Key Storage** — API keys stored in `localStorage`, never sent to the server
+- ⚡ **Tool Caching** — Cached MCP tool definitions for fast response times
 
-As a result, this is able to perform **AI-assisted penetration testing** and solving **CTF challenges** in real time.
+### Security Tools
+
+| Tool | Capability |
+|------|-----------|
+| **Nmap** | Port scanning, service detection, OS fingerprinting |
+| **Gobuster** | Directory/file brute-forcing, DNS subdomain enumeration |
+| **Dirb** | Web content discovery |
+| **Nikto** | Web server vulnerability scanning |
+| **SQLMap** | SQL injection detection & exploitation |
+| **Metasploit** | Exploit execution, payload delivery |
+| **Hydra** | Online password brute-forcing |
+| **John the Ripper** | Offline password hash cracking |
+| **WPScan** | WordPress vulnerability scanning |
+| **Enum4linux** | Windows/Samba/SMB enumeration |
+| **Custom Commands** | Execute arbitrary shell commands |
+
+---
+
+## 🏗️ Architecture
+
+```
+┌─────────────────────────────────────────────────┐
+│                  Web Dashboard                   │
+│  ┌──────────┐  ┌──────────┐  ┌───────────────┐  │
+│  │ AI Chat  │  │  Tools   │  │ Health Check  │  │
+│  └────┬─────┘  └──────────┘  └───────────────┘  │
+│       │                                          │
+│  ┌────▼─────────────────────────────────────┐    │
+│  │         Flask API (kali_server.py)       │    │
+│  │  ┌─────────────┐  ┌──────────────────┐   │    │
+│  │  │ AI Providers │  │   MCP Client     │   │    │
+│  │  │ (Gemini,GPT) │  │ (Tool Discovery) │   │    │
+│  │  └─────────────┘  └───────┬──────────┘   │    │
+│  └────────────────────────────┼──────────────┘    │
+│                               │                   │
+│  ┌────────────────────────────▼──────────────┐    │
+│  │       MCP Server (mcp_server.py)          │    │
+│  │  nmap │ sqlmap │ hydra │ nikto │ ...      │    │
+│  └───────────────────────────────────────────┘    │
+└─────────────────────────────────────────────────┘
+```
+
+**Two ways to use the tools:**
+1. **Dashboard AI Chat** — The browser-based chat uses the MCP client internally for fast, cached tool orchestration
+2. **External MCP Clients** — Claude Desktop, 5ire, Cursor, etc. connect directly to the MCP server
+
+---
+
+## 🛠️ Installation
+
+### Quick Start
+
+```bash
+git clone https://github.com/Wh0am123/MCP-Kali-Server.git
+cd MCP-Kali-Server
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+python3 kali_server.py
+```
+
+Open **http://127.0.0.1:5000** in your browser to access the dashboard.
+
+### Command Line Options
+
+```bash
+python3 kali_server.py                              # localhost:5000 (default)
+python3 kali_server.py --ip 0.0.0.0                 # all interfaces (⚠️ use caution)
+python3 kali_server.py --ip 192.168.1.100 --port 8080  # specific IP + port
+python3 kali_server.py --debug                      # verbose logging
+```
+
+### Kali Package (if available)
+
+```bash
+sudo apt install mcp-kali-server
+kali-server
+```
+
+---
+
+## 🤖 Using the AI Chat
+
+1. Click **AI Chat** in the sidebar
+2. Click the ⚙️ **Settings** button in the top bar
+3. Select your **AI Provider** (Gemini, OpenAI, Anthropic, or Ollama)
+4. Enter your **API Key** (stored locally, never sent to the server)
+5. Choose a **Model** or type a custom model name
+6. Start chatting! Try:
+   - `"Scan 192.168.1.1 with nmap for open ports"`
+   - `"Check example.com for SQL injection vulnerabilities"`
+   - `"Run a directory brute force on http://target.com"`
+
+### Discover Tools
+
+Click **🔍 Discover Tools** in the chat header to see all available MCP tools in real-time.
+
+---
+
+## 🔌 External MCP Client Setup
+
+### Local (same machine)
+
+```bash
+python3 mcp_server.py --server http://127.0.0.1:5000
+```
+
+### Remote (via SSH tunnel — recommended)
+
+```bash
+# Terminal 1 — SSH tunnel
+ssh -L 5000:localhost:5000 user@KALI_IP
+
+# Terminal 2 — MCP client
+python3 mcp_server.py --server http://127.0.0.1:5000
+```
+
+### Claude Desktop Config
+
+Edit your config file:
+- **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+
+See [mcp-kali-server.json](mcp-kali-server.json) for an example configuration.
+
+### 5ire Desktop
+
+Add an MCP with command: `python3 /path/to/mcp_server.py http://KALI_IP:5000`
+
+---
+
+## 📁 Project Structure
+
+```
+MCP-Kali-Server/
+├── kali_server.py       # Flask API + MCP Client + Dashboard
+├── mcp_server.py        # MCP Server (tool definitions)
+├── ai_providers.py      # AI provider abstraction (Gemini, OpenAI, Anthropic, Ollama)
+├── requirements.txt     # Python dependencies
+├── templates/
+│   └── index.html       # Dashboard UI
+├── static/
+│   ├── css/style.css    # Dashboard styles
+│   └── js/app.js        # Dashboard logic
+└── mcp-kali-server.json # Claude Desktop config example
+```
+
+---
+
+## 🔮 Other Possibilities
+
+The AI agent can execute arbitrary commands, enabling tasks beyond the built-in tools:
+
+- **Memory forensics** with Volatility — process enumeration, DLL injection checks
+- **Disk forensics** with SleuthKit — timeline generation, file carving
+- **Network analysis** with tcpdump/Wireshark — packet capture and analysis
+- **CTF solving** — automated recon and exploitation in real-time
+
+---
 
 ## Articles Using This Tool
 
@@ -26,147 +180,7 @@ As a result, this is able to perform **AI-assisted penetration testing** and sol
 
 ---
 
-## 🔍 Use Case
-
-The goal is to enable AI-driven offensive security testing by:
-
-- Letting the MCP interact with AI endpoints like [OpenAI](https://openai.com/), [Claude](https://claude.ai/), [DeepSeek](https://www.deepseek.com/), [Ollama](https://docs.ollama.com/) or any other models.
-- Exposing an API to execute commands on a [Kali](https://www.kali.org/) machine.
-- Using AI to suggest and run terminal commands to [solve CTF challenges](#example-solving-my-web-ctf-challenge-in-ramadanctf) or automate recon/exploitation tasks.
-- Allowing MCP apps to send custom requests (e.g. `curl`, `nmap`, `ffuf`, etc.) and receive structured outputs.
-
-Here are some example (using Google's AI `gemini 2.0 flash`):
-
-### Example solving my web CTF challenge in RamadanCTF
-
-https://github.com/user-attachments/assets/dc93b71d-9a4a-4ad5-8079-2c26c04e5397
-
-### Trying to solve machine "code" from HTB
-
-https://github.com/user-attachments/assets/3ec06ff8-0bdf-4ad5-be71-2ec490b7ee27
-
----
-
-## 🚀 Features
-
-- 🧠 **AI Endpoint Integration**: Connect your Kali to any MCP of your liking such as Claude Desktop or 5ier.
-- 🖥️ **Command Execution API**: Exposes a controlled API to execute terminal commands on your Kali Linux machine.
-- 🕸️ **Web Challenge Support**: AI can interact with websites and APIs, capture flags via `curl` and any other tool AI the needs.
-- 🔐 **Designed for Offensive Security Professionals**: Ideal for red teamers, bug bounty hunters, or CTF players automating common tasks.
-
----
-
-## 🛠️ Installation and Running
-
-### On your Kali Machine
-
-```bash
-sudo apt install mcp-kali-server
-kali-server
-```
-
-Otherwise for **bleeding edge**:
-
-```bash
-git clone https://github.com/Wh0am123/MCP-Kali-Server.git
-cd MCP-Kali-Server
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-python3 kali_server.py
-```
-
-**Command Line Options**:
-
-- `--ip <address>`: Specify the IP address to bind the server to (default: `127.0.0.1` for localhost only)
-  - Use `127.0.0.1` for local connections only (secure, recommended)
-  - Use `0.0.0.0` to allow connections from any network interface (very dangerous; use with caution)
-  - Use a specific IP address to bind to a particular network interface
-- `--port <port>`: Specify the port number (default: `5000`)
-- `--debug`: Enable debug mode for verbose logging
-
-**Examples**:
-
-```bash
-# Run on localhost only (secure, default)
-python3 kali_server.py
-
-# Run on all interfaces (less secure, useful for remote access)
-python3 kali_server.py --ip 0.0.0.0
-
-# Run on a specific IP and custom port
-python3 kali_server.py --ip 192.168.1.100 --port 8080
-
-# Run with debug mode
-python3 kali_server.py --debug
-```
-
-### On your MCP client machine
-
-This can be local (on the same Kali machine) or remote (another Linux machine, Windows or macOS).
-
-If you're running the client and server on the same _Kali_ machine (aka local), run either:
-
-```bash
-## OS package
-mcp-server --server http://127.0.0.1:5000
-
-# ...OR...
-
-## Bleeding edge
-./mcp_server.py --server http://127.0.0.1:5000
-```
-
----
-
-If separate machines (aka remote), create an SSH tunnel to your MCP server, then launch the client:
-
-```bash
-## Terminal 1 - Replace `LINUX_IP` with Kali's IP
-ssh -L 5000:localhost:5000 user@LINUX_IP
-
-## Terminal 2
-git clone https://github.com/Wh0am123/MCP-Kali-Server.git
-cd MCP-Kali-Server
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-./mcp_server.py --server http://127.0.0.1:5000
-```
-
----
-
-If you're openly hosting the MCP Kali server on your network (`kali_server.py --IP...`), you don't need the SSH tunnel (but we do recommend it!)
-NOTE: ⚠️(THIS IS STRONGLY DISCOURAGED. WE RECOMMEND SSH)⚠️.
-
-```bash
-./mcp_server.py --server http://LINUX_IP:5000
-```
-
-#### Configuration for Claude Desktop:
-
-Edit:
-
-- macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
-- Windows: `%APPDATA%\Claude\claude_desktop_config.json`
-
-[Example MCP-Kali-Server.json](mcp-kali-server.json)
-
-#### Configuration for 5ire Desktop Application:
-
-- Simply add an MCP with the command `python3 /absolute/path/to/mcp_server.py http://LINUX_IP:5000` and it will automatically generate the needed configuration files.
-
-## 🔮 Other Possibilities
-
-There are more possibilities than described since the AI model can now execute commands on the terminal. Here are some examples:
-
-- Memory forensics using Volatility
-  - Automating memory analysis tasks such as process enumeration, DLL injection checks, and registry extraction from memory dumps.
-
-- Disk forensics with SleuthKit
-  - Automating analysis from disk images, timeline generation, file carving, and hash comparisons.
-
-## ⚠️ Disclaimer:
+## ⚠️ Disclaimer
 
 This project is intended solely for educational and ethical testing purposes. Any misuse of the information or tools provided — including unauthorized access, exploitation, or malicious activity — is strictly prohibited.
 
