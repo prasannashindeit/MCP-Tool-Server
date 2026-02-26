@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCP Kali Server — Cybersecurity Dashboard</title>
+    <meta name="description"
+        content="A premium cybersecurity dashboard for managing Kali Linux penetration testing tools via the MCP Kali Server.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+
+<body>
+    <!-- Animated background grid overlay -->
+    <div class="bg-grid" aria-hidden="true"></div>
+    <div class="bg-glow bg-glow--teal" aria-hidden="true"></div>
+    <div class="bg-glow bg-glow--purple" aria-hidden="true"></div>
+
+    <div class="app" id="app">
+        <!-- ═══ Sidebar Navigation ═══ -->
+        <aside class="sidebar" id="sidebar" role="complementary" aria-label="Tool navigation">
+            <div class="sidebar__header">
+                <a href="/" class="sidebar__logo" aria-label="MCP Kali Home">
+                    <span class="sidebar__logo-icon" aria-hidden="true">
+                        <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="2" y="2" width="36" height="36" rx="8" stroke="url(#lg)" stroke-width="2.5" />
+                            <path d="M12 28V18L20 12L28 18V28" stroke="url(#lg)" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" />
+                            <circle cx="20" cy="22" r="3" stroke="url(#lg)" stroke-width="2" />
+                            <defs>
+                                <linearGradient id="lg" x1="0" y1="0" x2="40" y2="40">
+                                    <stop stop-color="#00ffd5" />
+                                    <stop offset="1" stop-color="#7b61ff" />
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                    </span>
+                    <span class="sidebar__logo-text">
+                        <strong class="sidebar__brand">MCP Kali</strong>
+                        <small class="sidebar__tagline">Security Suite</small>
+                    </span>
+                </a>
+            </div>
+
+            <nav class="sidebar__nav" id="toolNav" aria-label="Security tools">
+                <div class="nav-group" role="group" aria-labelledby="nav-label-recon">
+                    <span class="nav-group__label" id="nav-label-recon">Reconnaissance</span>
+                    <ul class="nav-group__list" role="list">
+                        <li><button class="nav-btn nav-btn--active" data-tool="nmap" type="button"
+                                aria-current="true"><span class="nav-btn__icon" aria-hidden="true">🔍</span><span
+                                    class="nav-btn__label">Nmap</span></button></li>
+                        <li><button class="nav-btn" data-tool="gobuster" type="button"><span class="nav-btn__icon"
+                                    aria-hidden="true">📂</span><span class="nav-btn__label">Gobuster</span></button>
+                        </li>
+                        <li><button class="nav-btn" data-tool="dirb" type="button"><span class="nav-btn__icon"
+                                    aria-hidden="true">🗂️</span><span class="nav-btn__label">Dirb</span></button></li>
+                        <li><button class="nav-btn" data-tool="nikto" type="button"><span class="nav-btn__icon"
+                                    aria-hidden="true">🕷️</span><span class="nav-btn__label">Nikto</span></button></li>
+                        <li><button class="nav-btn" data-tool="wpscan" type="button"><span class="nav-btn__icon"
+                                    aria-hidden="true">📝</span><span class="nav-btn__label">WPScan</span></button></li>
+                        <li><button class="nav-btn" data-tool="enum4linux" type="button"><span class="nav-btn__icon"
+                                    aria-hidden="true">🖥️</span><span class="nav-btn__label">Enum4linux</span></button>
+                        </li>
+                    </ul>
+                </div>
+                <div class="nav-group" role="group" aria-labelledby="nav-label-exploit">
+                    <span class="nav-group__label" id="nav-label-exploit">Exploitation</span>
+                    <ul class="nav-group__list" role="list">
+                        <li><button class="nav-btn" data-tool="sqlmap" type="button"><span class="nav-btn__icon"
+                                    aria-hidden="true">💉</span><span class="nav-btn__label">SQLMap</span></button></li>
+                        <li><button class="nav-btn" data-tool="metasploit" type="button"><span class="nav-btn__icon"
+                                    aria-hidden="true">⚔️</span><span class="nav-btn__label">Metasploit</span></button>
+                        </li>
+                    </ul>
+                </div>
+                <div class="nav-group" role="group" aria-labelledby="nav-label-creds">
+                    <span class="nav-group__label" id="nav-label-creds">Credential Attacks</span>
+                    <ul class="nav-group__list" role="list">
+                        <li><button class="nav-btn" data-tool="hydra" type="button"><span class="nav-btn__icon"
+                                    aria-hidden="true">🔑</span><span class="nav-btn__label">Hydra</span></button></li>
+                        <li><button class="nav-btn" data-tool="john" type="button"><span class="nav-btn__icon"
+                                    aria-hidden="true">🔓</span><span class="nav-btn__label">John</span></button></li>
+                    </ul>
+                </div>
+                <div class="nav-group" role="group" aria-labelledby="nav-label-sys">
+                    <span class="nav-group__label" id="nav-label-sys">System</span>
+                    <ul class="nav-group__list" role="list">
+                        <li><button class="nav-btn" data-tool="aichat" type="button"><span class="nav-btn__icon"
+                                    aria-hidden="true">🤖</span><span class="nav-btn__label">AI Chat</span></button>
+                        </li>
+
+                        <li><button class="nav-btn" data-tool="health" type="button"><span class="nav-btn__icon"
+                                    aria-hidden="true">💚</span><span class="nav-btn__label">Health
+                                    Check</span></button></li>
+                    </ul>
+                </div>
+            </nav>
+
+            <footer class="sidebar__footer">
+                <div class="server-status" role="status" aria-live="polite" id="serverStatus">
+                    <span class="server-status__dot" id="statusDot" aria-hidden="true"></span>
+                    <span class="server-status__text" id="statusText">Checking…</span>
+                </div>
+            </footer>
+        </aside>
+
+        <!-- ═══ Main Content ═══ -->
+        <main class="main" id="mainContent">
+            <!-- Top bar -->
+            <header class="topbar">
+                <div class="topbar__left">
+                    <button class="topbar__menu-btn" id="mobileMenuBtn" type="button" aria-label="Open navigation menu"
+                        aria-controls="sidebar" aria-expanded="false">
+                        <svg width="22" height="22" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                            <path d="M3 5h14M3 10h14M3 15h14" stroke="currentColor" stroke-width="1.5"
+                                stroke-linecap="round" />
+                        </svg>
+                    </button>
+                    <h1 class="topbar__title" id="pageTitle">Nmap Scanner</h1>
+                    <span class="topbar__badge" id="pageBadge">Reconnaissance</span>
+                </div>
+                <div class="topbar__right">
+                    <button class="btn btn--ghost" id="settingsBtn" type="button" aria-label="AI Settings"
+                        title="AI Settings">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                            <path d="M8 10a2 2 0 100-4 2 2 0 000 4z" stroke="currentColor" stroke-width="1.2" />
+                            <path
+                                d="M13.05 10a1.12 1.12 0 00.22 1.23l.04.04a1.36 1.36 0 11-1.92 1.92l-.04-.04a1.12 1.12 0 00-1.23-.22 1.12 1.12 0 00-.68 1.03v.12a1.36 1.36 0 11-2.72 0v-.06a1.12 1.12 0 00-.73-1.03 1.12 1.12 0 00-1.23.22l-.04.04a1.36 1.36 0 11-1.92-1.92l.04-.04a1.12 1.12 0 00.22-1.23 1.12 1.12 0 00-1.03-.68h-.12a1.36 1.36 0 110-2.72h.06a1.12 1.12 0 001.03-.73 1.12 1.12 0 00-.22-1.23l-.04-.04a1.36 1.36 0 111.92-1.92l.04.04a1.12 1.12 0 001.23.22h.05a1.12 1.12 0 00.68-1.03v-.12a1.36 1.36 0 112.72 0v.06a1.12 1.12 0 00.68 1.03 1.12 1.12 0 001.23-.22l.04-.04a1.36 1.36 0 111.92 1.92l-.04.04a1.12 1.12 0 00-.22 1.23v.05a1.12 1.12 0 001.03.68h.12a1.36 1.36 0 110 2.72h-.06a1.12 1.12 0 00-1.03.68z"
+                                stroke="currentColor" stroke-width="1.1" />
+                        </svg>
+                        <span>AI Settings</span>
+                    </button>
+                    <button class="btn btn--ghost" id="clearOutputBtn" type="button" aria-label="Clear terminal output">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                            <path
+                                d="M2 4h12M5.33 4V2.67a1.33 1.33 0 011.34-1.34h2.66a1.33 1.33 0 011.34 1.34V4m2 0v9.33a1.33 1.33 0 01-1.34 1.34H4.67a1.33 1.33 0 01-1.34-1.34V4h9.34z"
+                                stroke="currentColor" stroke-width="1.2" stroke-linecap="round"
+                                stroke-linejoin="round" />
+                        </svg>
+                        <span>Clear</span>
+                    </button>
+                    <div class="topbar__counter" aria-label="Number of scans executed">
+                        <span id="scanCount">0</span> scans
+                    </div>
+                </div>
+            </header>
+
+            <!-- Content Grid -->
+            <div class="content">
+                <!-- Tool Config Panel -->
+                <section class="panel panel--config" id="toolPanel" aria-labelledby="toolTitle">
+                    <div class="panel__header">
+                        <h2 class="panel__title" id="toolTitle">Configure Scan</h2>
+                        <p class="panel__desc" id="toolDescription">Configure and launch an Nmap scan against your
+                            target.</p>
+                    </div>
+                    <form class="tool-form" id="toolForm" novalidate>
+                        <fieldset class="tool-form__fieldset" id="formFields">
+                            <legend class="sr-only" id="formLegend">Nmap parameters</legend>
+                            <!-- Dynamically populated by JS -->
+                        </fieldset>
+                        <div class="tool-form__actions">
+                            <button type="submit" class="btn btn--primary" id="submitBtn" aria-busy="false">
+                                <span class="btn__icon" aria-hidden="true">
+                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                        <path d="M13.33 8H2.67M8 2.67L13.33 8 8 13.33" stroke="currentColor"
+                                            stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                                    </svg>
+                                </span>
+                                <span class="btn__text">Launch Scan</span>
+                                <span class="btn__loader" aria-hidden="true" style="display:none;">
+                                    <svg class="spinner" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                        <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="2"
+                                            stroke-dasharray="30 10" stroke-linecap="round" />
+                                    </svg>
+                                </span>
+                            </button>
+                        </div>
+                    </form>
+                </section>
+
+                <!-- Output Console -->
+                <section class="panel panel--output" id="outputPanel" aria-labelledby="outputTitle">
+                    <div class="panel__header panel__header--row">
+                        <h2 class="panel__title" id="outputTitle">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                                <rect x="1.33" y="2.67" width="13.33" height="10.67" rx="1.33" stroke="currentColor"
+                                    stroke-width="1.2" />
+                                <path d="M4 6.67l2.67 1.66L4 10M8 10h4" stroke="currentColor" stroke-width="1.2"
+                                    stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                            Output Console
+                        </h2>
+                        <div class="panel__controls">
+                            <button class="btn btn--icon" id="copyOutputBtn" type="button"
+                                aria-label="Copy output to clipboard">
+                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                                    <rect x="4.67" y="4.67" width="8.17" height="8.17" rx="1" stroke="currentColor"
+                                        stroke-width="1.1" />
+                                    <path
+                                        d="M9.33 4.67V2.33A1.17 1.17 0 008.17 1.17H2.33A1.17 1.17 0 001.17 2.33v5.84A1.17 1.17 0 002.33 9.33h2.34"
+                                        stroke="currentColor" stroke-width="1.1" />
+                                </svg>
+                            </button>
+                            <button class="btn btn--icon" id="expandOutputBtn" type="button"
+                                aria-label="Toggle fullscreen terminal">
+                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                                    <path
+                                        d="M1.17 5.25V1.17h4.08M12.83 5.25V1.17H8.75M1.17 8.75v4.08h4.08M12.83 8.75v4.08H8.75"
+                                        stroke="currentColor" stroke-width="1.1" stroke-linecap="round"
+                                        stroke-linejoin="round" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="terminal" id="terminal" role="log" aria-live="polite" aria-label="Scan output">
+                        <output class="terminal__content" id="terminalContent">
+                            <div class="terminal__welcome" aria-label="Welcome screen">
+                                <pre class="terminal__ascii" aria-hidden="true">
+ ███╗   ███╗ ██████╗██████╗     ██╗  ██╗ █████╗ ██╗     ██╗
+ ████╗ ████║██╔════╝██╔══██╗    ██║ ██╔╝██╔══██╗██║     ██║
+ ██╔████╔██║██║     ██████╔╝    █████╔╝ ███████║██║     ██║
+ ██║╚██╔╝██║██║     ██╔═══╝     ██╔═██╗ ██╔══██║██║     ██║
+ ██║ ╚═╝ ██║╚██████╗██║         ██║  ██╗██║  ██║███████╗██║
+ ╚═╝     ╚═╝ ╚═════╝╚═╝         ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝╚═╝</pre>
+                                <p class="terminal__welcome-text">Select a tool from the sidebar and configure your
+                                    scan.</p>
+                                <p class="terminal__welcome-sub">Results will appear here in real-time.</p>
+                            </div>
+                        </output>
+                    </div>
+                </section>
+            </div>
+
+            <!-- AI Chat Panel (hidden by default, shown when aichat is selected) -->
+            <div class="chat-panel" id="chatPanel" style="display:none;">
+                <div class="chat-header">
+                    <span class="chat-header__title">🤖 AI Security Assistant</span>
+                    <button class="btn btn--ghost btn--sm" id="chatDiscoverBtn" type="button"
+                        title="Discover Available MCP Tools">
+                        🔍 Discover Tools
+                    </button>
+                </div>
+                <div class="chat-messages" id="chatMessages" role="log" aria-live="polite"
+                    aria-label="AI chat messages">
+                    <div class="chat-welcome">
+                        <div class="chat-welcome__icon" aria-hidden="true">🤖</div>
+                        <p class="chat-welcome__title">AI Security Assistant</p>
+                        <p class="chat-welcome__desc">Ask me to scan targets, analyze vulnerabilities, or run any Kali
+                            tool. Configure your AI provider in Settings first.</p>
+                        <div class="chat-welcome__examples">
+                            <button class="chat-example" type="button"
+                                data-msg="Scan 192.168.1.1 with nmap for open ports">"Scan 192.168.1.1 with
+                                nmap"</button>
+                            <button class="chat-example" type="button"
+                                data-msg="Check if example.com has SQL injection vulnerabilities">"Check for SQL
+                                injection"</button>
+                            <button class="chat-example" type="button"
+                                data-msg="Run a directory brute force on http://target.com">"Directory brute
+                                force"</button>
+                        </div>
+                        <div class="chat-welcome__actions">
+                            <button class="btn btn--primary" id="welcomeDiscoverBtn" type="button">
+                                🚀 Discover Available Tools
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="chat-activity-bar" id="chatActivityBar" style="display: none;">
+                    <div class="chat-activity-bar__spinner"></div>
+                    <span class="chat-activity-bar__text" id="chatActivityText">AI is thinking...</span>
+                </div>
+                <form class="chat-input" id="chatForm">
+                    <input type="text" class="chat-input__field" id="chatInput"
+                        placeholder="Ask the AI to run a scan, analyze a target..." aria-label="Chat message"
+                        autocomplete="off">
+                    <button type="submit" class="chat-input__send" id="chatSendBtn" aria-label="Send message">
+                        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+                            <path d="M16.5 1.5L8.25 9.75M16.5 1.5L11.25 16.5l-3-6.75-6.75-3L16.5 1.5z"
+                                stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                                stroke-linejoin="round" />
+                        </svg>
+                    </button>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal-overlay" id="settingsOverlay" style="display:none;" role="dialog" aria-modal="true"
+        aria-labelledby="settingsTitle">
+        <div class="modal" id="settingsModal">
+            <div class="modal__header">
+                <h2 class="modal__title" id="settingsTitle">⚙️ AI Settings</h2>
+                <button class="btn btn--icon" id="settingsCloseBtn" type="button" aria-label="Close settings">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                        <path d="M12 4L4 12M4 4l8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                    </svg>
+                </button>
+            </div>
+            <div class="modal__body">
+                <div class="form-group">
+                    <label class="form-group__label" for="settingsProvider">AI Provider</label>
+                    <select class="form-group__select" id="settingsProvider">
+                        <option value="">Select a provider…</option>
+                    </select>
+                </div>
+                <div class="form-group" id="apiKeyGroup">
+                    <label class="form-group__label" for="settingsApiKey">API Key</label>
+                    <input class="form-group__input" id="settingsApiKey" type="password"
+                        placeholder="Enter your API key" autocomplete="off">
+                    <span class="form-group__hint">Keys are stored locally in your browser only.</span>
+                </div>
+                <div class="form-group">
+                    <label class="form-group__label" for="settingsModel">Model</label>
+                    <select class="form-group__select" id="settingsModel">
+                        <option value="">Select a model…</option>
+                    </select>
+                    <input class="form-group__input" id="settingsCustomModel" type="text"
+                        placeholder="Or type a custom model name (e.g. gpt-4-turbo)" autocomplete="off">
+                    <span class="form-group__hint">Custom name overrides the dropdown selection.</span>
+                </div>
+            </div>
+            <div class="modal__footer">
+                <button class="btn btn--primary" id="settingsSaveBtn" type="button">Save Settings</button>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <!-- Mobile overlay -->
+    <div class="sidebar-overlay" id="sidebarOverlay" aria-hidden="true"></div>
+
+    <!-- Toast container -->
+    <div class="toast-container" id="toastContainer" role="alert" aria-live="assertive" aria-atomic="true"></div>
+
+    <!-- Screen reader announcements -->
+    <div class="sr-only" role="status" aria-live="polite" id="srAnnounce"></div>
+
+    <script src="/static/js/app.js" defer></script>
+</body>
+
+</html>
