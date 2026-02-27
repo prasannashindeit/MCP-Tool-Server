@@ -262,7 +262,9 @@ def nmap():
         target = params.get("target", "")
         scan_type = params.get("scan_type", "-sCV")
         ports = params.get("ports", "")
-        additional_args = params.get("additional_args", "-T4 -Pn")
+        timing = params.get("timing", "-T4")
+        scripts = params.get("scripts", "")
+        additional_args = params.get("additional_args", "")
         
         if not target:
             logger.warning("Nmap called without target parameter")
@@ -271,12 +273,17 @@ def nmap():
             }), 400        
         
         command = f"nmap {scan_type}"
+
+        if timing:
+            command += f" {timing}"
         
         if ports:
             command += f" -p {ports}"
+
+        if scripts:
+            command += f" --script={scripts}"
         
         if additional_args:
-            # Basic validation for additional args - more sophisticated validation would be better
             command += f" {additional_args}"
         
         command += f" {target}"

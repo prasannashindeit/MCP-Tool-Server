@@ -19,10 +19,43 @@
             method: 'POST',
             description: 'Network exploration and security auditing. Discovers hosts, services, OS versions, and vulnerabilities on a network.',
             fields: [
-                { name: 'target', label: 'Target', placeholder: '192.168.1.1 or example.com', required: true },
-                { name: 'scan_type', label: 'Scan Type', type: 'select', options: ['-sV', '-sCV', '-sS', '-sT', '-sU', '-sA', '-sP', '-sn'], value: '-sCV' },
-                { name: 'ports', label: 'Ports', placeholder: '22,80,443 or 1-1000' },
-                { name: 'additional_args', label: 'Additional Args', placeholder: '-T4 -Pn --script=vuln', value: '-T4 -Pn' }
+                { name: 'target', label: 'Target', placeholder: '192.168.1.1, 10.0.0.0/24, or example.com', required: true },
+                {
+                    name: 'scan_type', label: 'Scan Type', type: 'select', value: '-sCV', options: [
+                        { value: '-sCV', label: 'Service & Version Detection (-sCV)' },
+                        { value: '-sV', label: 'Version Detection (-sV)' },
+                        { value: '-sS', label: 'TCP SYN Stealth Scan (-sS)' },
+                        { value: '-sT', label: 'TCP Connect Scan (-sT)' },
+                        { value: '-sU', label: 'UDP Scan (-sU)' },
+                        { value: '-sA', label: 'TCP ACK Scan (-sA)' },
+                        { value: '-sn', label: 'Ping Sweep — Host Discovery (-sn)' },
+                        { value: '-A', label: 'Aggressive — OS, Version, Scripts, Traceroute (-A)' }
+                    ]
+                },
+                { name: 'ports', label: 'Ports', placeholder: '22,80,443 or 1-1000 (blank = top 1000)' },
+                {
+                    name: 'timing', label: 'Timing Template', type: 'select', value: '-T4', options: [
+                        { value: '-T0', label: 'T0 — Paranoid (IDS evasion)' },
+                        { value: '-T1', label: 'T1 — Sneaky' },
+                        { value: '-T2', label: 'T2 — Polite' },
+                        { value: '-T3', label: 'T3 — Normal (default)' },
+                        { value: '-T4', label: 'T4 — Aggressive (recommended)' },
+                        { value: '-T5', label: 'T5 — Insane (fast, may miss)' }
+                    ]
+                },
+                {
+                    name: 'scripts', label: 'NSE Scripts', type: 'select', value: '', options: [
+                        { value: '', label: 'None' },
+                        { value: 'default', label: 'Default Scripts' },
+                        { value: 'vuln', label: 'Vulnerability Detection' },
+                        { value: 'safe', label: 'Safe Scripts Only' },
+                        { value: 'auth', label: 'Authentication Checks' },
+                        { value: 'discovery', label: 'Host & Service Discovery' },
+                        { value: 'brute', label: 'Brute-Force Scripts' },
+                        { value: 'http-enum,http-headers,http-methods', label: 'Web Server Enumeration' }
+                    ]
+                },
+                { name: 'additional_args', label: 'Additional Args', placeholder: '-Pn --open -oN output.txt' }
             ]
         },
         gobuster: {
@@ -375,9 +408,12 @@
                 input.className = 'form-group__select';
                 field.options.forEach(function (opt) {
                     var option = document.createElement('option');
-                    option.value = opt;
-                    option.textContent = opt;
-                    if (opt === field.value) option.selected = true;
+                    // Support both plain strings and {value, label} objects
+                    var optVal = (typeof opt === 'object') ? opt.value : opt;
+                    var optLabel = (typeof opt === 'object') ? opt.label : opt;
+                    option.value = optVal;
+                    option.textContent = optLabel;
+                    if (optVal === field.value) option.selected = true;
                     input.appendChild(option);
                 });
             } else {
