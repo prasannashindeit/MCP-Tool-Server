@@ -1,6 +1,6 @@
-# MCP Security-Tool Server
+# PenForge — Security Tool Orchestrator
 
-**MCP Security-Tool Server** is a cybersecurity dashboard and API bridge that connects AI models to Kali Linux security tools via the [Model Context Protocol (MCP)](https://modelcontextprotocol.io/). It features a built-in **AI Chat** interface with real-time tool orchestration, multi-provider support, and dynamic tool discovery.
+**PenForge** is a cybersecurity dashboard and API bridge that connects AI models to penetration testing tools via the [Model Context Protocol (MCP)](https://modelcontextprotocol.io/). It features a built-in **AI Chat** interface with real-time tool orchestration, multi-provider support, and dynamic tool discovery.
 
 ### 📸 Screenshots
 
@@ -46,7 +46,7 @@
 │  └────┬─────┘  └──────────┘  └───────────────┘  │
 │       │                                          │
 │  ┌────▼─────────────────────────────────────┐    │
-│  │         Flask API (kali_server.py)       │    │
+│  │       Flask API (kali_server.py)         │    │
 │  │  ┌─────────────┐  ┌──────────────────┐   │    │
 │  │  │ AI Providers │  │   MCP Client     │   │    │
 │  │  │ (Gemini,GPT) │  │ (Tool Discovery) │   │    │
@@ -71,8 +71,8 @@
 ### Quick Start
 
 ```bash
-git clone https://github.com/Wh0am123/MCP-Kali-Server.git
-cd MCP-Kali-Server
+git clone https://github.com/YourUsername/PenForge.git
+cd PenForge
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
@@ -88,13 +88,6 @@ python3 kali_server.py                              # localhost:5000 (default)
 python3 kali_server.py --ip 0.0.0.0                 # all interfaces (⚠️ use caution)
 python3 kali_server.py --ip 192.168.1.100 --port 8080  # specific IP + port
 python3 kali_server.py --debug                      # verbose logging
-```
-
-### Kali Package (if available)
-
-```bash
-sudo apt install mcp-kali-server
-kali-server
 ```
 
 ---
@@ -129,7 +122,7 @@ python3 mcp_server.py --server http://127.0.0.1:5000
 
 ```bash
 # Terminal 1 — SSH tunnel
-ssh -L 5000:localhost:5000 user@KALI_IP
+ssh -L 5000:localhost:5000 user@SERVER_IP
 
 # Terminal 2 — MCP client
 python3 mcp_server.py --server http://127.0.0.1:5000
@@ -145,14 +138,14 @@ See [mcp-kali-server.json](mcp-kali-server.json) for an example configuration.
 
 ### 5ire Desktop
 
-Add an MCP with command: `python3 /path/to/mcp_server.py http://KALI_IP:5000`
+Add an MCP with command: `python3 /path/to/mcp_server.py http://SERVER_IP:5000`
 
 ---
 
 ## 📁 Project Structure
 
 ```
-MCP-Kali-Server/
+PenForge/
 ├── kali_server.py       # Flask API + MCP Client + Dashboard
 ├── mcp_server.py        # MCP Server (tool definitions)
 ├── ai_providers.py      # AI provider abstraction (Gemini, OpenAI, Anthropic, Ollama)

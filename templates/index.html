@@ -4,9 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MCP Kali Server — Cybersecurity Dashboard</title>
+    <title>PenForge — Cybersecurity Dashboard</title>
     <meta name="description"
-        content="A premium cybersecurity dashboard for managing Kali Linux penetration testing tools via the MCP Kali Server.">
+        content="A premium cybersecurity dashboard for managing penetration testing tools via PenForge Security Orchestrator.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
@@ -25,7 +25,7 @@
         <!-- ═══ Sidebar Navigation ═══ -->
         <aside class="sidebar" id="sidebar" role="complementary" aria-label="Tool navigation">
             <div class="sidebar__header">
-                <a href="/" class="sidebar__logo" aria-label="MCP Kali Home">
+                <a href="/" class="sidebar__logo" aria-label="PenForge Home">
                     <span class="sidebar__logo-icon" aria-hidden="true">
                         <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <rect x="2" y="2" width="36" height="36" rx="8" stroke="url(#lg)" stroke-width="2.5" />
@@ -41,7 +41,7 @@
                         </svg>
                     </span>
                     <span class="sidebar__logo-text">
-                        <strong class="sidebar__brand">MCP Kali</strong>
+                        <strong class="sidebar__brand">PenForge</strong>
                         <small class="sidebar__tagline">Security Suite</small>
                     </span>
                 </a>
@@ -222,12 +222,12 @@
                         <output class="terminal__content" id="terminalContent">
                             <div class="terminal__welcome" aria-label="Welcome screen">
                                 <pre class="terminal__ascii" aria-hidden="true">
- ███╗   ███╗ ██████╗██████╗     ██╗  ██╗ █████╗ ██╗     ██╗
- ████╗ ████║██╔════╝██╔══██╗    ██║ ██╔╝██╔══██╗██║     ██║
- ██╔████╔██║██║     ██████╔╝    █████╔╝ ███████║██║     ██║
- ██║╚██╔╝██║██║     ██╔═══╝     ██╔═██╗ ██╔══██║██║     ██║
- ██║ ╚═╝ ██║╚██████╗██║         ██║  ██╗██║  ██║███████╗██║
- ╚═╝     ╚═╝ ╚═════╝╚═╝         ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝╚═╝</pre>
+ ██████╗ ███████╗███╗   ██╗███████╗ ██████╗ ██████╗  ██████╗ ███████╗
+ ██╔══██╗██╔════╝████╗  ██║██╔════╝██╔═══██╗██╔══██╗██╔════╝ ██╔════╝
+ ██████╔╝█████╗  ██╔██╗ ██║█████╗  ██║   ██║██████╔╝██║  ███╗█████╗
+ ██╔═══╝ ██╔══╝  ██║╚██╗██║██╔══╝  ██║   ██║██╔══██╗██║   ██║██╔══╝
+ ██║     ███████╗██║ ╚████║██║     ╚██████╔╝██║  ██║╚██████╔╝███████╗
+ ╚═╝     ╚══════╝╚═╝  ╚═══╝╚═╝      ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚══════╝</pre>
                                 <p class="terminal__welcome-text">Select a tool from the sidebar and configure your
                                     scan.</p>
                                 <p class="terminal__welcome-sub">Results will appear here in real-time.</p>
@@ -241,28 +241,38 @@
             <div class="chat-panel" id="chatPanel" style="display:none;">
                 <div class="chat-header">
                     <span class="chat-header__title">🤖 AI Security Assistant</span>
-                    <button class="btn btn--ghost btn--sm" id="chatDiscoverBtn" type="button"
-                        title="Discover Available MCP Tools">
-                        🔍 Discover Tools
-                    </button>
+                    <div class="chat-header__actions">
+                        <button class="btn btn--ghost btn--sm" id="chatDiscoverBtn" type="button"
+                            title="Discover Available MCP Tools">
+                            🔍 Discover Tools
+                        </button>
+                        <button class="btn btn--ghost btn--sm" id="chatClearBtn" type="button"
+                            title="Clear chat history">
+                            🗑️ Clear
+                        </button>
+                    </div>
                 </div>
                 <div class="chat-messages" id="chatMessages" role="log" aria-live="polite"
                     aria-label="AI chat messages">
                     <div class="chat-welcome">
                         <div class="chat-welcome__icon" aria-hidden="true">🤖</div>
                         <p class="chat-welcome__title">AI Security Assistant</p>
-                        <p class="chat-welcome__desc">Ask me to scan targets, analyze vulnerabilities, or run any Kali
-                            tool. Configure your AI provider in Settings first.</p>
+                        <p class="chat-welcome__desc">Ask me to scan targets, analyze vulnerabilities, or run any
+                            security
+                            tool. Configure your AI provider in <strong>Settings</strong> first.</p>
                         <div class="chat-welcome__examples">
                             <button class="chat-example" type="button"
-                                data-msg="Scan 192.168.1.1 with nmap for open ports">"Scan 192.168.1.1 with
-                                nmap"</button>
+                                data-msg="Scan 192.168.1.1 with nmap for open ports and services">🔍 "Scan
+                                192.168.1.1 with nmap"</button>
                             <button class="chat-example" type="button"
-                                data-msg="Check if example.com has SQL injection vulnerabilities">"Check for SQL
+                                data-msg="Check if example.com has SQL injection vulnerabilities">💉 "Check for SQL
                                 injection"</button>
                             <button class="chat-example" type="button"
-                                data-msg="Run a directory brute force on http://target.com">"Directory brute
+                                data-msg="Run a directory brute force on http://target.com">📂 "Directory brute
                                 force"</button>
+                            <button class="chat-example" type="button" data-msg="Enumerate SMB shares on 10.0.0.5">🖥️
+                                "Enumerate SMB
+                                shares"</button>
                         </div>
                         <div class="chat-welcome__actions">
                             <button class="btn btn--primary" id="welcomeDiscoverBtn" type="button">
@@ -276,9 +286,9 @@
                     <span class="chat-activity-bar__text" id="chatActivityText">AI is thinking...</span>
                 </div>
                 <form class="chat-input" id="chatForm">
-                    <input type="text" class="chat-input__field" id="chatInput"
-                        placeholder="Ask the AI to run a scan, analyze a target..." aria-label="Chat message"
-                        autocomplete="off">
+                    <textarea class="chat-input__field" id="chatInput" rows="1"
+                        placeholder="Ask the AI to run a scan, analyze a target… (Shift+Enter for new line)"
+                        aria-label="Chat message" autocomplete="off"></textarea>
                     <button type="submit" class="chat-input__send" id="chatSendBtn" aria-label="Send message">
                         <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
                             <path d="M16.5 1.5L8.25 9.75M16.5 1.5L11.25 16.5l-3-6.75-6.75-3L16.5 1.5z"

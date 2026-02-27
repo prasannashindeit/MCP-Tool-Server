@@ -1,5 +1,5 @@
 /**
- * MCP Kali Server — Dashboard Application
+ * PenForge — Dashboard Application
  *
  * Vanilla ES6+ · IIFE pattern · Event delegation
  * Keyboard navigable · Accessible announcements
@@ -65,10 +65,17 @@
             method: 'POST',
             description: 'Directory/file, DNS subdomain, and virtual host brute-forcing tool.',
             fields: [
-                { name: 'url', label: 'Target URL', placeholder: 'http://example.com', required: true },
-                { name: 'mode', label: 'Mode', type: 'select', options: ['dir', 'dns', 'fuzz', 'vhost'], value: 'dir' },
-                { name: 'wordlist', label: 'Wordlist', placeholder: '/usr/share/wordlists/dirb/common.txt', value: '/usr/share/wordlists/dirb/common.txt' },
-                { name: 'additional_args', label: 'Additional Args', placeholder: '-t 50 -x php,html' }
+                { name: 'url', label: 'Target URL', placeholder: 'http://example.com or http://10.10.10.1', required: true },
+                {
+                    name: 'mode', label: 'Mode', type: 'select', value: 'dir', options: [
+                        { value: 'dir', label: 'Directory / File Brute-Force' },
+                        { value: 'dns', label: 'DNS Subdomain Brute-Force' },
+                        { value: 'vhost', label: 'Virtual Host Discovery' },
+                        { value: 'fuzz', label: 'Fuzzing Mode' }
+                    ]
+                },
+                { name: 'wordlist', label: 'Wordlist', value: '/usr/share/wordlists/dirb/common.txt', placeholder: '/usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt' },
+                { name: 'additional_args', label: 'Additional Args', placeholder: '-t 50 -x php,html,txt -s 200,301,302' }
             ]
         },
         dirb: {
@@ -76,11 +83,11 @@
             category: 'Reconnaissance',
             endpoint: '/api/tools/dirb',
             method: 'POST',
-            description: 'Web content scanner that looks for existing and hidden web objects.',
+            description: 'Web content scanner that looks for existing and hidden web objects using dictionary attacks.',
             fields: [
-                { name: 'url', label: 'Target URL', placeholder: 'http://example.com', required: true },
-                { name: 'wordlist', label: 'Wordlist', value: '/usr/share/wordlists/dirb/common.txt' },
-                { name: 'additional_args', label: 'Additional Args', placeholder: '-o output.txt' }
+                { name: 'url', label: 'Target URL', placeholder: 'http://example.com or http://10.10.10.1:8080', required: true },
+                { name: 'wordlist', label: 'Wordlist', value: '/usr/share/wordlists/dirb/common.txt', placeholder: '/usr/share/wordlists/dirb/big.txt' },
+                { name: 'additional_args', label: 'Additional Args', placeholder: '-X .php,.html -a "Mozilla/5.0" -o output.txt' }
             ]
         },
         nikto: {
@@ -88,10 +95,10 @@
             category: 'Reconnaissance',
             endpoint: '/api/tools/nikto',
             method: 'POST',
-            description: 'Tests web servers for dangerous files, outdated software, and known vulnerabilities.',
+            description: 'Tests web servers for dangerous files, outdated software, misconfigurations, and known vulnerabilities.',
             fields: [
-                { name: 'target', label: 'Target', placeholder: 'http://example.com', required: true },
-                { name: 'additional_args', label: 'Additional Args', placeholder: '-ssl -Tuning x' }
+                { name: 'target', label: 'Target', placeholder: 'http://example.com or https://10.10.10.1:443', required: true },
+                { name: 'additional_args', label: 'Additional Args', placeholder: '-ssl -Tuning x -output nikto_report.html -Format html' }
             ]
         },
         wpscan: {
@@ -99,10 +106,10 @@
             category: 'Reconnaissance',
             endpoint: '/api/tools/wpscan',
             method: 'POST',
-            description: 'WordPress vulnerability scanner — checks themes, plugins, and core.',
+            description: 'WordPress vulnerability scanner — enumerates themes, plugins, users, and checks for known CVEs.',
             fields: [
-                { name: 'url', label: 'WordPress URL', placeholder: 'http://example.com/wp', required: true },
-                { name: 'additional_args', label: 'Additional Args', placeholder: '--enumerate u,p,t' }
+                { name: 'url', label: 'WordPress URL', placeholder: 'http://example.com or http://10.10.10.1/wordpress', required: true },
+                { name: 'additional_args', label: 'Additional Args', placeholder: '--enumerate u,p,t --plugins-detection aggressive --api-token YOUR_TOKEN' }
             ]
         },
         enum4linux: {
@@ -110,10 +117,10 @@
             category: 'Reconnaissance',
             endpoint: '/api/tools/enum4linux',
             method: 'POST',
-            description: 'Windows and Samba enumeration tool for shares, users, and groups.',
+            description: 'Windows and Samba enumeration — discovers shares, users, groups, OS info, and password policies.',
             fields: [
-                { name: 'target', label: 'Target IP', placeholder: '192.168.1.100', required: true },
-                { name: 'additional_args', label: 'Additional Args', value: '-a', placeholder: '-a (full enumeration)' }
+                { name: 'target', label: 'Target IP', placeholder: '192.168.1.100 or 10.10.10.1', required: true },
+                { name: 'additional_args', label: 'Additional Args', value: '-a', placeholder: '-a (full) -U (users) -S (shares) -P (policy) -G (groups)' }
             ]
         },
         sqlmap: {
@@ -121,11 +128,11 @@
             category: 'Exploitation',
             endpoint: '/api/tools/sqlmap',
             method: 'POST',
-            description: 'Automatic SQL injection detection and database takeover tool.',
+            description: 'Automatic SQL injection detection and database takeover — supports MySQL, PostgreSQL, MSSQL, Oracle, and more.',
             fields: [
                 { name: 'url', label: 'Target URL', placeholder: 'http://example.com/page?id=1', required: true },
-                { name: 'data', label: 'POST Data', placeholder: 'username=test&password=test' },
-                { name: 'additional_args', label: 'Additional Args', placeholder: '--dbs --level=5' }
+                { name: 'data', label: 'POST Data', placeholder: 'username=test&password=test (leave blank for GET requests)' },
+                { name: 'additional_args', label: 'Additional Args', placeholder: '--dbs --level=5 --risk=3 --batch --threads=5' }
             ]
         },
         metasploit: {
@@ -133,10 +140,10 @@
             category: 'Exploitation',
             endpoint: '/api/tools/metasploit',
             method: 'POST',
-            description: 'Advanced exploit framework for penetration testing and module execution.',
+            description: 'Advanced exploit framework — run modules, generate payloads, and execute post-exploitation tasks.',
             fields: [
-                { name: 'module', label: 'Module Path', placeholder: 'exploit/multi/handler', required: true },
-                { name: 'options', label: 'Options (JSON)', placeholder: '{"RHOSTS":"192.168.1.1","RPORT":"445"}', type: 'json' }
+                { name: 'module', label: 'Module Path', placeholder: 'exploit/multi/handler or auxiliary/scanner/smb/smb_ms17_010', required: true },
+                { name: 'options', label: 'Options (JSON)', placeholder: '{"RHOSTS":"192.168.1.1","RPORT":"445","LHOST":"10.0.0.1"}', type: 'json' }
             ]
         },
         hydra: {
@@ -144,15 +151,28 @@
             category: 'Credential Attacks',
             endpoint: '/api/tools/hydra',
             method: 'POST',
-            description: 'Fast online password cracker supporting SSH, FTP, HTTP, RDP, and more.',
+            description: 'Fast online password cracker — brute-force login credentials over SSH, FTP, HTTP, RDP, SMB, and more.',
             fields: [
-                { name: 'target', label: 'Target', placeholder: '192.168.1.1', required: true },
-                { name: 'service', label: 'Service', type: 'select', options: ['ssh', 'ftp', 'http-post-form', 'http-get', 'rdp', 'smb', 'telnet', 'mysql', 'postgres', 'vnc'], required: true },
-                { name: 'username', label: 'Username', placeholder: 'admin' },
+                { name: 'target', label: 'Target', placeholder: '192.168.1.1 or example.com', required: true },
+                {
+                    name: 'service', label: 'Service', type: 'select', required: true, value: 'ssh', options: [
+                        { value: 'ssh', label: 'SSH (Port 22)' },
+                        { value: 'ftp', label: 'FTP (Port 21)' },
+                        { value: 'http-post-form', label: 'HTTP POST Form' },
+                        { value: 'http-get', label: 'HTTP GET' },
+                        { value: 'rdp', label: 'RDP (Port 3389)' },
+                        { value: 'smb', label: 'SMB (Port 445)' },
+                        { value: 'telnet', label: 'Telnet (Port 23)' },
+                        { value: 'mysql', label: 'MySQL (Port 3306)' },
+                        { value: 'postgres', label: 'PostgreSQL (Port 5432)' },
+                        { value: 'vnc', label: 'VNC (Port 5900)' }
+                    ]
+                },
+                { name: 'username', label: 'Username', placeholder: 'admin (single username)' },
                 { name: 'username_file', label: 'Username File', placeholder: '/usr/share/wordlists/usernames.txt' },
-                { name: 'password', label: 'Password', placeholder: 'password123' },
+                { name: 'password', label: 'Password', placeholder: 'password123 (single password)' },
                 { name: 'password_file', label: 'Password File', placeholder: '/usr/share/wordlists/rockyou.txt' },
-                { name: 'additional_args', label: 'Additional Args', placeholder: '-t 4 -V' }
+                { name: 'additional_args', label: 'Additional Args', placeholder: '-t 4 -V -f (stop on first match)' }
             ]
         },
         john: {
@@ -160,12 +180,25 @@
             category: 'Credential Attacks',
             endpoint: '/api/tools/john',
             method: 'POST',
-            description: 'Password cracker with auto-detection for many hash formats.',
+            description: 'Powerful offline password cracker with auto-detection for 200+ hash formats and GPU acceleration.',
             fields: [
-                { name: 'hash_file', label: 'Hash File', placeholder: '/tmp/hashes.txt', required: true },
-                { name: 'wordlist', label: 'Wordlist', value: '/usr/share/wordlists/rockyou.txt' },
-                { name: 'format', label: 'Format Type', placeholder: 'raw-md5, sha256, bcrypt' },
-                { name: 'additional_args', label: 'Additional Args', placeholder: '--rules --fork=4' }
+                { name: 'hash_file', label: 'Hash File', placeholder: '/tmp/hashes.txt or /tmp/shadow', required: true },
+                { name: 'wordlist', label: 'Wordlist', value: '/usr/share/wordlists/rockyou.txt', placeholder: '/usr/share/wordlists/rockyou.txt' },
+                {
+                    name: 'format', label: 'Hash Format', type: 'select', value: '', options: [
+                        { value: '', label: 'Auto-Detect' },
+                        { value: 'raw-md5', label: 'MD5 (raw-md5)' },
+                        { value: 'raw-sha1', label: 'SHA-1 (raw-sha1)' },
+                        { value: 'raw-sha256', label: 'SHA-256 (raw-sha256)' },
+                        { value: 'raw-sha512', label: 'SHA-512 (raw-sha512)' },
+                        { value: 'bcrypt', label: 'bcrypt' },
+                        { value: 'ntlm', label: 'NTLM (Windows)' },
+                        { value: 'sha512crypt', label: 'SHA-512 Crypt (Linux /etc/shadow)' },
+                        { value: 'md5crypt', label: 'MD5 Crypt (Linux $1$)' },
+                        { value: 'descrypt', label: 'DES Crypt (Traditional)' }
+                    ]
+                },
+                { name: 'additional_args', label: 'Additional Args', placeholder: '--rules --fork=4 --show (show cracked)' }
             ]
         },
         health: {
@@ -181,7 +214,7 @@
             category: 'System',
             endpoint: '/api/chat',
             method: 'POST',
-            description: 'Chat with an AI assistant that can orchestrate Kali security tools.',
+            description: 'Chat with an AI assistant that can orchestrate your security tools.',
             fields: []
         }
     };
@@ -190,7 +223,7 @@
        STATE
        ═══════════════════════════════ */
     var savedSettings = {};
-    try { savedSettings = JSON.parse(localStorage.getItem('mcpKaliAI') || '{}'); } catch (e) { }
+    try { savedSettings = JSON.parse(localStorage.getItem('penforgeAI') || '{}'); } catch (e) { }
 
     const state = {
         currentTool: 'nmap',
@@ -251,6 +284,7 @@
         apiKeyGroup: document.getElementById('apiKeyGroup'),
         settingsCustomModel: document.getElementById('settingsCustomModel'),
         chatDiscoverBtn: document.getElementById('chatDiscoverBtn'),
+        chatClearBtn: document.getElementById('chatClearBtn'),
         welcomeDiscoverBtn: document.getElementById('welcomeDiscoverBtn'),
         chatActivityBar: document.getElementById('chatActivityBar'),
         chatActivityText: document.getElementById('chatActivityText')
@@ -268,8 +302,46 @@
     function announce(msg) {
         if (el.srAnnounce) {
             el.srAnnounce.textContent = '';
-            requestAnimationFrame(function () { el.srAnnounce.textContent = msg; });
+            setTimeout(function () { el.srAnnounce.textContent = msg; }, 50);
         }
+    }
+
+    /* ── Lightweight markdown → HTML (no dependencies) ── */
+    function renderMarkdown(text) {
+        if (!text) return '';
+        var html = text;
+        // Code blocks (```...```)
+        html = html.replace(/```(\w*)\n([\s\S]*?)```/g, function (_, lang, code) {
+            return '<pre><code>' + escapeHtml(code.trim()) + '</code></pre>';
+        });
+        // Inline code
+        html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+        // Headers
+        html = html.replace(/^#### (.+)$/gm, '<h4>$1</h4>');
+        html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+        html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+        html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+        // Horizontal rule
+        html = html.replace(/^---$/gm, '<hr>');
+        // Bold + italic
+        html = html.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
+        html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+        html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+        // Blockquote
+        html = html.replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>');
+        // Unordered list items
+        html = html.replace(/^[\-\*] (.+)$/gm, '<li>$1</li>');
+        html = html.replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>');
+        // Clean up duplicate <ul> wrappers
+        html = html.replace(/<\/ul>\s*<ul>/g, '');
+        // Ordered list items
+        html = html.replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
+        // Line breaks for remaining bare text lines
+        html = html.replace(/\n/g, '<br>');
+        // Clean up excessive <br> after block elements
+        html = html.replace(/(<\/(h[1-4]|pre|ul|ol|blockquote|hr|li|table)>)<br>/g, '$1');
+        html = html.replace(/<br>(<(h[1-4]|pre|ul|ol|blockquote|hr))/g, '$1');
+        return html;
     }
 
     function showToast(msg) {
@@ -849,7 +921,7 @@
             var custom = el.settingsCustomModel.value.trim();
             state.aiModel = custom || el.settingsModel.value;
 
-            localStorage.setItem('mcpKaliAI', JSON.stringify({
+            localStorage.setItem('penforgeAI', JSON.stringify({
                 provider: state.aiProvider,
                 apiKey: state.aiApiKey,
                 model: state.aiModel
@@ -927,7 +999,30 @@
             if (!msg || state.chatBusy) return;
             sendChatMessage(msg);
             el.chatInput.value = '';
+            el.chatInput.style.height = 'auto';
         });
+
+        // Textarea: Enter sends, Shift+Enter inserts new line, auto-resize
+        el.chatInput.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                el.chatForm.requestSubmit();
+            }
+        });
+        el.chatInput.addEventListener('input', function () {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+        });
+
+        // Clear chat
+        if (el.chatClearBtn) {
+            el.chatClearBtn.addEventListener('click', function () {
+                state.chatMessages = [];
+                el.chatMessages.innerHTML = '';
+                showToast('Chat cleared');
+                announce('Chat history cleared');
+            });
+        }
 
         // Discover tools buttons
         if (el.chatDiscoverBtn) {
@@ -973,10 +1068,11 @@
         var textNode = document.createElement('div');
         if (extra && extra.raw_html) {
             textNode.innerHTML = extra.raw_html;
+        } else if (role === 'ai' && !(extra && extra.isSystem)) {
+            // Render markdown for AI messages
+            textNode.innerHTML = renderMarkdown(content);
         } else {
-            // Simple markdown-like bold formatting
-            var processed = content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-            textNode.innerHTML = processed.replace(/\n/g, '<br>');
+            textNode.textContent = content;
         }
 
         if (extra && extra.isSystem) {
@@ -991,13 +1087,29 @@
 
         bubble.appendChild(textNode);
 
-        // Show tool output if available
+        // Show tool output if available (collapsible)
         if (extra && extra.tool_result && extra.tool_result.stdout) {
-            var output = document.createElement('div');
-            output.className = 'chat-tool-output';
-            output.textContent = extra.tool_result.stdout.substring(0, 2000);
-            bubble.appendChild(output);
+            var toggleBtn = document.createElement('button');
+            toggleBtn.className = 'chat-tool-output-toggle';
+            toggleBtn.textContent = '▶ Show raw output';
+            var outputBox = document.createElement('div');
+            outputBox.className = 'chat-tool-output';
+            outputBox.style.display = 'none';
+            outputBox.textContent = extra.tool_result.stdout.substring(0, 2000);
+            toggleBtn.addEventListener('click', function () {
+                var visible = outputBox.style.display !== 'none';
+                outputBox.style.display = visible ? 'none' : 'block';
+                toggleBtn.textContent = visible ? '▶ Show raw output' : '▼ Hide raw output';
+            });
+            bubble.appendChild(toggleBtn);
+            bubble.appendChild(outputBox);
         }
+
+        // Timestamp (shows on hover)
+        var timeEl = document.createElement('div');
+        timeEl.className = 'chat-msg__time';
+        timeEl.textContent = new Date().toLocaleTimeString();
+        bubble.appendChild(timeEl);
 
         div.appendChild(avatar);
         div.appendChild(bubble);

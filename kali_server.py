@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# This script connect the MCP AI agent to Kali Linux terminal and API Server.
+# This script connects the MCP AI agent to the PenForge API Server.
 
 # some of the code here was inspired from https://github.com/whit3rabbit0/project_astro , be sure to check them out
 
@@ -20,7 +20,7 @@ from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 from ai_providers import (
     get_provider, get_tools_for_provider, get_tool_endpoint,
-    PROVIDER_INFO, KALI_TOOLS_SCHEMA
+    PROVIDER_INFO, SECURITY_TOOLS_SCHEMA
 )
 
 # Configure logging
@@ -638,7 +638,7 @@ def health_check():
 
     payload = {
         "status": "healthy",
-        "message": "Kali Linux Tools API Server is running",
+        "message": "PenForge Security API Server is running",
         "tools_status": tools_status,
         "all_essential_tools_available": all_essential_tools_available
     }
@@ -677,7 +677,7 @@ def _sse(event: str, data) -> str:
 
 @app.route("/api/chat", methods=["POST"])
 def ai_chat():
-    """Chat with an AI model that can orchestrate Kali tools (SSE stream)."""
+    """Chat with an AI model that can orchestrate security tools (SSE stream)."""
     params = request.json
     provider_name = params.get("provider", "")
     api_key = params.get("api_key", "")
@@ -798,7 +798,7 @@ def ai_chat():
 
 def parse_args():
     """Parse command line arguments."""
-    parser = argparse.ArgumentParser(description="Run the Kali Linux API Server")
+    parser = argparse.ArgumentParser(description="Run the PenForge API Server")
     parser.add_argument("--debug", action="store_true", help="Enable debug mode")
     parser.add_argument("--port", type=int, default=API_PORT, help=f"Port for the API server (default: {API_PORT})")
     parser.add_argument("--ip", type=str, default="127.0.0.1", help="IP address to bind the server to (default: 127.0.0.1 for localhost only)")
@@ -816,5 +816,5 @@ if __name__ == "__main__":
     if args.port != API_PORT:
         API_PORT = args.port
     
-    logger.info(f"Starting Kali Linux Tools API Server on {args.ip}:{API_PORT}")
+    logger.info(f"Starting PenForge API Server on {args.ip}:{API_PORT}")
     app.run(host=args.ip, port=API_PORT, debug=DEBUG_MODE)
