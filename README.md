@@ -71,7 +71,7 @@
 ### Quick Start
 
 ```bash
-git clone https://github.com/YourUsername/PenForge.git
+git clone https://github.com/prasannashindeit/PenForge-Tool
 cd PenForge
 python3 -m venv venv
 source venv/bin/activate
