@@ -13,8 +13,9 @@ import sys
 import traceback
 import threading
 import asyncio
+import time
 from typing import Dict, Any, List, Optional
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, Response
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 from ai_providers import (
@@ -32,9 +33,28 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# ── Persistent background event loop ──────────────────────────────────────
+# A single asyncio loop that lives for the lifetime of the process.
+# All async MCP work is submitted here, avoiding the overhead of
+# `asyncio.run()` (which creates + tears down a loop each time).
+_bg_loop = asyncio.new_event_loop()
+
+def _start_bg_loop(loop: asyncio.AbstractEventLoop):
+    asyncio.set_event_loop(loop)
+    loop.run_forever()
+
+_bg_thread = threading.Thread(target=_start_bg_loop, args=(_bg_loop,), daemon=True)
+_bg_thread.start()
+
+def run_async(coro, timeout=300):
+    """Run an async coroutine on the persistent background loop (thread-safe)."""
+    future = asyncio.run_coroutine_threadsafe(coro, _bg_loop)
+    return future.result(timeout=timeout)
+
+
 class MCPClient:
     """Helper class to manage MCP server connection and tool execution."""
-    
+
     def __init__(self, server_script="mcp_server.py"):
         self.server_script = server_script
         self.params = StdioServerParameters(
@@ -49,12 +69,11 @@ class MCPClient:
 
     async def get_tools(self, force_refresh=False):
         """Fetch available tools from the MCP server (cached)."""
-        import time as _time
-        now = _time.time()
+        now = time.time()
         if not force_refresh and self._tools_cache and (now - self._tools_cache_time) < self._cache_ttl:
             logger.info("Using cached MCP tools list")
             return self._tools_cache
-        
+
         try:
             async with stdio_client(self.params) as (read, write):
                 async with ClientSession(read, write) as session:
@@ -587,29 +606,38 @@ def enum4linux():
         }), 500
 
 
-# Health check endpoint
+# Health check — cached to avoid spawning 10 subprocesses every poll
+_health_cache = {"data": None, "time": 0}
+_HEALTH_CACHE_TTL = 120  # seconds
+
 @app.route("/health", methods=["GET"])
 def health_check():
-    """Health check endpoint."""
-    # Check if essential tools are installed
+    """Health check endpoint (cached)."""
+    now = time.time()
+    if _health_cache["data"] and (now - _health_cache["time"]) < _HEALTH_CACHE_TTL:
+        return jsonify(_health_cache["data"])
+
     essential_tools = ["nmap", "gobuster", "dirb", "nikto", "wpscan", "enum4linux", "sqlmap", "msfconsole", "hydra", "john"]
     tools_status = {}
-    
+
     for tool in essential_tools:
         try:
             result = execute_command(f"which {tool}")
             tools_status[tool] = result["success"]
         except:
             tools_status[tool] = False
-    
+
     all_essential_tools_available = all(tools_status.values())
-    
-    return jsonify({
+
+    payload = {
         "status": "healthy",
         "message": "Kali Linux Tools API Server is running",
         "tools_status": tools_status,
         "all_essential_tools_available": all_essential_tools_available
-    })
+    }
+    _health_cache["data"] = payload
+    _health_cache["time"] = now
+    return jsonify(payload)
 
 @app.route("/api/providers", methods=["GET"])
 def list_providers():
@@ -620,10 +648,10 @@ def list_providers():
 @app.route("/api/mcp/tools", methods=["GET"])
 def list_mcp_tools():
     """Fetch live tools list from MCP server (force-refreshes cache)."""
-    tools_resp = asyncio.run(mcp_client.get_tools(force_refresh=True))
+    tools_resp = run_async(mcp_client.get_tools(force_refresh=True))
     if not tools_resp or not hasattr(tools_resp, 'tools'):
         return jsonify({"tools": []})
-    
+
     tools = []
     for t in tools_resp.tools:
         tools.append({
@@ -634,106 +662,132 @@ def list_mcp_tools():
     return jsonify({"tools": tools})
 
 
+def _sse(event: str, data) -> str:
+    """Format a single SSE frame."""
+    payload = json.dumps(data) if not isinstance(data, str) else data
+    return f"event: {event}\ndata: {payload}\n\n"
+
+
 @app.route("/api/chat", methods=["POST"])
 def ai_chat():
-    """Chat with an AI model that can orchestrate Kali tools."""
-    try:
-        params = request.json
-        provider_name = params.get("provider", "")
-        api_key = params.get("api_key", "")
-        model = params.get("model", "")
-        messages = params.get("messages", [])
+    """Chat with an AI model that can orchestrate Kali tools (SSE stream)."""
+    params = request.json
+    provider_name = params.get("provider", "")
+    api_key = params.get("api_key", "")
+    model = params.get("model", "")
+    messages = params.get("messages", [])
 
-        if not provider_name or not model:
-            return jsonify({"error": "Provider and model are required"}), 400
+    # ── Validate early (non-streaming errors) ──
+    if not provider_name or not model:
+        return jsonify({"error": "Provider and model are required"}), 400
 
-        info = PROVIDER_INFO.get(provider_name, {})
-        if info.get("needs_key") and not api_key:
-            return jsonify({"error": "API key is required for " + provider_name}), 400
+    info = PROVIDER_INFO.get(provider_name, {})
+    if info.get("needs_key") and not api_key:
+        return jsonify({"error": "API key is required for " + provider_name}), 400
 
-        # Get provider instance
-        provider = get_provider(provider_name, api_key=api_key, model=model)
-        
-        # Get tools from MCP
-        mcp_tools_resp = asyncio.run(mcp_client.get_tools())
-        tools = []
-        if mcp_tools_resp and hasattr(mcp_tools_resp, 'tools'):
-            for t in mcp_tools_resp.tools:
-                tools.append({
-                    "name": t.name,
-                    "description": t.description,
-                    "parameters": t.inputSchema
-                })
-        else:
-            # Fallback to hardcoded tools if MCP is down
-            logger.warning("MCP tools not available, falling back to static schema")
-            tools = get_tools_for_provider()
+    def generate():
+        try:
+            # Step 1 — status: thinking
+            yield _sse("status", {"message": "AI is thinking…"})
 
-        # First AI call
-        result = provider.chat(messages, tools=tools)
+            provider = get_provider(provider_name, api_key=api_key, model=model)
 
-        if result.get("type") == "error":
-            return jsonify({"reply": result["content"], "tool_used": None, "tool_result": None})
-
-        # If AI wants to call a tool, execute it via MCP
-        if result.get("type") == "tool_call":
-            tool_name = result["tool_name"]
-            tool_args = result.get("tool_args", {})
-
-            logger.info(f"AI calling MCP tool: {tool_name} with args: {tool_args}")
-            mcp_result = asyncio.run(mcp_client.call_tool(tool_name, tool_args))
-            
-            tool_output = None
-            if mcp_result and hasattr(mcp_result, 'content'):
-                # Extract text from MCP CallToolResult
-                content_text = ""
-                for content in mcp_result.content:
-                    if hasattr(content, 'text'):
-                        content_text += content.text
-                
-                # Try to parse as JSON if it looks like one (our MCP server returns tool results as JSON)
-                try:
-                    tool_output = json.loads(content_text)
-                except:
-                    tool_output = {"stdout": content_text}
+            # Fetch MCP tools (uses persistent loop — fast when cached)
+            mcp_tools_resp = run_async(mcp_client.get_tools())
+            tools = []
+            if mcp_tools_resp and hasattr(mcp_tools_resp, 'tools'):
+                for t in mcp_tools_resp.tools:
+                    tools.append({
+                        "name": t.name,
+                        "description": t.description,
+                        "parameters": t.inputSchema
+                    })
             else:
-                tool_output = {"error": "Failed to get response from MCP tool"}
+                logger.warning("MCP tools not available, falling back to static schema")
+                tools = get_tools_for_provider()
 
-            # Format tool result for user
-            tool_summary = ""
-            if tool_output:
-                if tool_output.get("stdout"):
-                    tool_summary = tool_output["stdout"][:3000]
-                elif tool_output.get("error"):
-                    tool_summary = f"Error: {tool_output['error']}"
-                elif tool_output.get("stderr"):
-                    tool_summary = tool_output["stderr"][:2000]
+            # First AI call
+            result = provider.chat(messages, tools=tools)
 
-            # Second AI call — analyze the results
-            analysis_messages = messages + [
-                {"role": "assistant", "content": f"I ran {tool_name} and here are the results:"},
-                {"role": "user", "content": f"Tool output:\n```\n{tool_summary}\n```\nPlease analyze these results and provide insights."}
-            ]
+            if result.get("type") == "error":
+                yield _sse("reply", {"reply": result["content"], "tool_used": None, "tool_result": None})
+                yield _sse("done", {})
+                return
 
-            analysis = provider.chat(analysis_messages)
-            analysis_text = analysis.get("content", "Tool executed successfully.")
+            # ── Tool-call path ──
+            if result.get("type") == "tool_call":
+                tool_name = result["tool_name"]
+                tool_args = result.get("tool_args", {})
 
-            return jsonify({
-                "reply": analysis_text,
-                "tool_used": tool_name,
-                "tool_args": tool_args,
-                "tool_result": tool_output
-            })
+                # Step 2 — status: calling tool
+                yield _sse("status", {"message": f"Calling tool: {tool_name}"})
 
-        # Normal text response (no tool call)
-        return jsonify({"reply": result.get("content", ""), "tool_used": None, "tool_result": None})
+                logger.info(f"AI calling MCP tool: {tool_name} with args: {tool_args}")
+                mcp_result = run_async(mcp_client.call_tool(tool_name, tool_args))
 
-    except ValueError as e:
-        return jsonify({"error": str(e)}), 400
-    except Exception as e:
-        logger.error(f"Error in chat endpoint: {str(e)}")
-        logger.error(traceback.format_exc())
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+                tool_output = None
+                if mcp_result and hasattr(mcp_result, 'content'):
+                    content_text = ""
+                    for content in mcp_result.content:
+                        if hasattr(content, 'text'):
+                            content_text += content.text
+                    try:
+                        tool_output = json.loads(content_text)
+                    except Exception:
+                        tool_output = {"stdout": content_text}
+                else:
+                    tool_output = {"error": "Failed to get response from MCP tool"}
+
+                # Step 3 — stream tool result to frontend immediately
+                yield _sse("tool_result", {
+                    "tool_used": tool_name,
+                    "tool_args": tool_args,
+                    "tool_result": tool_output
+                })
+
+                # Build summary for analysis
+                tool_summary = ""
+                if tool_output:
+                    if tool_output.get("stdout"):
+                        tool_summary = tool_output["stdout"][:3000]
+                    elif tool_output.get("error"):
+                        tool_summary = f"Error: {tool_output['error']}"
+                    elif tool_output.get("stderr"):
+                        tool_summary = tool_output["stderr"][:2000]
+
+                # Step 4 — status: analyzing
+                yield _sse("status", {"message": "AI is analyzing results…"})
+
+                analysis_messages = messages + [
+                    {"role": "assistant", "content": f"I ran {tool_name} and here are the results:"},
+                    {"role": "user", "content": f"Tool output:\n```\n{tool_summary}\n```\nPlease analyze these results and provide insights."}
+                ]
+
+                analysis = provider.chat(analysis_messages)
+                analysis_text = analysis.get("content", "Tool executed successfully.")
+
+                yield _sse("reply", {
+                    "reply": analysis_text,
+                    "tool_used": tool_name,
+                    "tool_args": tool_args,
+                    "tool_result": tool_output
+                })
+                yield _sse("done", {})
+                return
+
+            # ── Normal text response (no tool call) ──
+            yield _sse("reply", {"reply": result.get("content", ""), "tool_used": None, "tool_result": None})
+            yield _sse("done", {})
+
+        except ValueError as e:
+            yield _sse("error", {"error": str(e)})
+        except Exception as e:
+            logger.error(f"Error in chat endpoint: {str(e)}")
+            logger.error(traceback.format_exc())
+            yield _sse("error", {"error": f"Server error: {str(e)}"})
+
+    return Response(generate(), mimetype="text/event-stream",
+                    headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
 def parse_args():
     """Parse command line arguments."""

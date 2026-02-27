@@ -274,7 +274,7 @@
         loadProviders();
         selectTool('nmap');
         checkHealth();
-        setInterval(checkHealth, 30000);
+        setInterval(checkHealth, 120000); // every 2 minutes
     }
 
     /* ═══════════════════════════════
@@ -1006,18 +1006,9 @@
 
         addChatMessage('user', msg);
         state.chatMessages.push({ role: 'user', content: msg });
-        setChatActivity('AI is thinking...');
+        setChatActivity('AI is thinking…');
 
         try {
-            // Simulate agent steps for better visibility during long blocking requests
-            var step = 0;
-            var activityTimer = setInterval(function () {
-                step++;
-                if (step === 1) setChatActivity('AI is orchestrating tools...');
-                if (step === 2) setChatActivity('AI is analyzing results...');
-                if (step > 3) clearInterval(activityTimer);
-            }, 3000);
-
             var res = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -1029,18 +1020,89 @@
                 })
             });
 
-            clearInterval(activityTimer);
-            var data = await res.json();
-            setChatActivity(null);
+            // Handle non-streaming responses (JSON fallback or errors)
+            var contentType = res.headers.get('content-type') || '';
+            if (!res.ok || contentType.indexOf('text/event-stream') === -1) {
+                setChatActivity(null);
+                try {
+                    var jsonData = await res.json();
+                    // Valid JSON reply (old format or fallback)
+                    if (jsonData.reply) {
+                        addChatMessage('ai', jsonData.reply, {
+                            tool_used: jsonData.tool_used,
+                            tool_result: jsonData.tool_result
+                        });
+                        state.chatMessages.push({ role: 'assistant', content: jsonData.reply });
+                    } else if (jsonData.error) {
+                        addChatMessage('ai', '❌ ' + (jsonData.error.message || jsonData.error));
+                    } else {
+                        addChatMessage('ai', '❌ Unexpected response (HTTP ' + res.status + ')');
+                    }
+                } catch (e) {
+                    addChatMessage('ai', '❌ Server error (HTTP ' + res.status + ')');
+                }
+                return;
+            }
 
-            if (data.error) {
-                addChatMessage('ai', '❌ ' + (data.error.message || data.error || 'Unknown error'));
-            } else {
-                addChatMessage('ai', data.reply || 'No response.', {
-                    tool_used: data.tool_used,
-                    tool_result: data.tool_result
-                });
-                state.chatMessages.push({ role: 'assistant', content: data.reply || '' });
+            // ── SSE stream reader ──
+            var reader = res.body.getReader();
+            var decoder = new TextDecoder();
+            var buffer = '';
+            var toolExtra = null; // collect tool_result event for badge
+
+            while (true) {
+                var chunk = await reader.read();
+                if (chunk.done) break;
+                buffer += decoder.decode(chunk.value, { stream: true });
+
+                // Process complete SSE frames (double newline delimited)
+                var frames = buffer.split('\n\n');
+                buffer = frames.pop(); // keep incomplete tail
+
+                for (var i = 0; i < frames.length; i++) {
+                    var frame = frames[i].trim();
+                    if (!frame) continue;
+
+                    var eventType = 'message';
+                    var dataStr = '';
+
+                    var lines = frame.split('\n');
+                    for (var j = 0; j < lines.length; j++) {
+                        var line = lines[j];
+                        if (line.indexOf('event: ') === 0) {
+                            eventType = line.substring(7);
+                        } else if (line.indexOf('data: ') === 0) {
+                            dataStr = line.substring(6);
+                        }
+                    }
+
+                    var data = {};
+                    try { data = JSON.parse(dataStr); } catch (e) { /* skip */ }
+
+                    if (eventType === 'status') {
+                        setChatActivity(data.message || 'Working…');
+                    } else if (eventType === 'tool_result') {
+                        // Store for the reply message badge
+                        toolExtra = {
+                            tool_used: data.tool_used,
+                            tool_result: data.tool_result
+                        };
+                        // Show intermediate tool output immediately
+                        addChatMessage('ai', '🔧 Ran **' + (data.tool_used || 'tool') + '** — analyzing output…', { isSystem: true });
+                    } else if (eventType === 'reply') {
+                        setChatActivity(null);
+                        addChatMessage('ai', data.reply || 'No response.', toolExtra || {
+                            tool_used: data.tool_used,
+                            tool_result: data.tool_result
+                        });
+                        state.chatMessages.push({ role: 'assistant', content: data.reply || '' });
+                    } else if (eventType === 'error') {
+                        setChatActivity(null);
+                        addChatMessage('ai', '❌ ' + (data.error || 'Unknown error'));
+                    } else if (eventType === 'done') {
+                        setChatActivity(null);
+                    }
+                }
             }
         } catch (err) {
             setChatActivity(null);
