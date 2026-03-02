@@ -257,6 +257,8 @@
         expandOutputBtn: document.getElementById('expandOutputBtn'),
         scanCount: document.getElementById('scanCount'),
         statusDot: document.getElementById('statusDot'),
+        rootWarning: document.getElementById('rootWarning'),
+        rootWarningDismiss: document.getElementById('rootWarningDismiss'),
         statusText: document.getElementById('statusText'),
         mobileMenuBtn: document.getElementById('mobileMenuBtn'),
         sidebar: document.getElementById('sidebar'),
@@ -665,26 +667,61 @@
         var statusLabel = result.timed_out ? 'Timeout' : (result.success ? 'Success' : 'Error');
         var time = new Date().toLocaleTimeString();
         var bodyHtml = '';
+        var rawOutput = '';
+        var lineCount = 0;
 
         if (result.error) {
-            bodyHtml = '<div class="output-entry__error">⚠️ ' + escapeHtml(result.error) + '</div>';
+            bodyHtml = '<div class="output-entry__error"><span class="output-entry__error-icon">⚠️</span> ' + escapeHtml(result.error) + '</div>';
+            rawOutput = result.error;
         } else {
-            if (result.stdout) bodyHtml += '<div class="output-entry__stdout">' + escapeHtml(result.stdout) + '</div>';
-            if (result.stderr) bodyHtml += '<div class="output-entry__stderr">' + escapeHtml(result.stderr) + '</div>';
+            if (result.stdout) {
+                rawOutput = result.stdout;
+                lineCount = result.stdout.split('\n').length;
+                var stdoutContent = escapeHtml(result.stdout);
+                if (lineCount > 50) {
+                    var previewLines = result.stdout.split('\n').slice(0, 30).join('\n');
+                    bodyHtml += '<div class="output-entry__stdout output-entry__stdout--collapsed" data-full="' + encodeURIComponent(result.stdout) + '">' +
+                        escapeHtml(previewLines) +
+                        '\n<span class="output-entry__truncated">... ' + (lineCount - 30) + ' more lines</span></div>' +
+                        '<button class="output-entry__expand-btn" onclick="this.previousElementSibling.innerHTML=decodeURIComponent(this.previousElementSibling.dataset.full).replace(/&/g,\'&amp;\').replace(/</g,\'&lt;\').replace(/>/g,\'&gt;\');this.previousElementSibling.classList.remove(\'output-entry__stdout--collapsed\');this.textContent=\'▲ Collapse\';this.onclick=function(){location.reload();};">▼ Show all ' + lineCount + ' lines</button>';
+                } else {
+                    bodyHtml += '<div class="output-entry__stdout">' + stdoutContent + '</div>';
+                }
+            }
+            if (result.stderr) {
+                rawOutput += (rawOutput ? '\n\n--- STDERR ---\n' : '') + result.stderr;
+                bodyHtml += '<div class="output-entry__stderr"><span class="output-entry__stderr-label">STDERR</span>' + escapeHtml(result.stderr) + '</div>';
+            }
             if (!result.stdout && !result.stderr) bodyHtml = '<div class="form-empty">No output returned.</div>';
         }
 
+        var lineInfo = lineCount > 0 ? '<span class="output-entry__lines">' + lineCount + ' lines</span>' : '';
+        var commandHtml = result.command ? '<div class="output-entry__command"><span class="output-entry__command-label">$</span> ' + escapeHtml(result.command) + '</div>' : '';
+        var copyId = 'copy_' + Date.now();
+
         var html =
-            '<article class="output-entry" role="article" aria-label="' + escapeHtml(toolName) + ' result">' +
+            '<article class="output-entry output-entry--' + status + '" role="article" aria-label="' + escapeHtml(toolName) + ' result">' +
             '<div class="output-entry__header">' +
             '<span class="output-entry__tool">⚡ ' + escapeHtml(toolName) + '</span>' +
+            '<div class="output-entry__meta">' +
+            lineInfo +
             '<span class="output-entry__badge output-entry__badge--' + status + '">' + statusLabel + '</span>' +
             '<span class="output-entry__time">' + time + ' · ' + elapsed + 's</span>' +
+            '<button class="output-entry__copy-btn" id="' + copyId + '" title="Copy output">📋</button>' +
             '</div>' +
+            '</div>' +
+            commandHtml +
             '<div class="output-entry__body">' + bodyHtml + '</div>' +
             '</article>';
 
         el.terminalContent.insertAdjacentHTML('afterbegin', html);
+
+        // Bind copy button
+        document.getElementById(copyId).addEventListener('click', function () {
+            navigator.clipboard.writeText(rawOutput).then(function () {
+                showToast('Output copied to clipboard');
+            });
+        });
     }
 
     function renderHealthResult(result) {
@@ -713,11 +750,13 @@
         }
 
         var entry =
-            '<article class="output-entry" role="article" aria-label="Health check result">' +
+            '<article class="output-entry output-entry--success" role="article" aria-label="Health check result">' +
             '<div class="output-entry__header">' +
             '<span class="output-entry__tool">💚 Health Check</span>' +
+            '<div class="output-entry__meta">' +
             '<span class="output-entry__badge output-entry__badge--success">OK</span>' +
             '<span class="output-entry__time">' + new Date().toLocaleTimeString() + '</span>' +
+            '</div>' +
             '</div>' +
             '<div class="output-entry__body" style="padding:0;">' + html + '</div>' +
             '</article>';
@@ -727,13 +766,15 @@
 
     function renderErrorResult(toolName, message) {
         var html =
-            '<article class="output-entry" role="article" aria-label="Error result">' +
+            '<article class="output-entry output-entry--error" role="article" aria-label="Error result">' +
             '<div class="output-entry__header">' +
             '<span class="output-entry__tool">⚡ ' + escapeHtml(toolName) + '</span>' +
+            '<div class="output-entry__meta">' +
             '<span class="output-entry__badge output-entry__badge--error">Error</span>' +
             '<span class="output-entry__time">' + new Date().toLocaleTimeString() + '</span>' +
             '</div>' +
-            '<div class="output-entry__body"><div class="output-entry__error">❌ Connection failed: ' + escapeHtml(message) + '</div></div>' +
+            '</div>' +
+            '<div class="output-entry__body"><div class="output-entry__error"><span class="output-entry__error-icon">❌</span> Connection failed: ' + escapeHtml(message) + '</div></div>' +
             '</article>';
 
         el.terminalContent.insertAdjacentHTML('afterbegin', html);
@@ -847,6 +888,14 @@
             if (res.ok) {
                 el.statusDot.className = 'server-status__dot server-status__dot--online';
                 el.statusText.textContent = 'Server Online';
+
+                // Check root access and show warning if not root
+                var data = await res.json();
+                if (data.running_as_root === false && !sessionStorage.getItem('rootWarningDismissed')) {
+                    el.rootWarning.style.display = 'flex';
+                } else {
+                    el.rootWarning.style.display = 'none';
+                }
             } else {
                 el.statusDot.className = 'server-status__dot server-status__dot--offline';
                 el.statusText.textContent = 'Server Error';
@@ -856,6 +905,14 @@
             el.statusText.textContent = 'Server Offline';
         }
     }, 300);
+
+    // Root warning dismiss
+    if (el.rootWarningDismiss) {
+        el.rootWarningDismiss.addEventListener('click', function () {
+            el.rootWarning.style.display = 'none';
+            sessionStorage.setItem('rootWarningDismissed', '1');
+        });
+    }
 
     /* ═══════════════════════════════
        SETTINGS MODAL

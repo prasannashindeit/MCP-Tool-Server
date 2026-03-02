@@ -125,6 +125,12 @@
                     <span class="topbar__badge" id="pageBadge">Reconnaissance</span>
                 </div>
                 <div class="topbar__right">
+                    <div class="root-warning" id="rootWarning" style="display:none;">
+                        <span class="root-warning__icon">🔒</span>
+                        <span class="root-warning__text">Running without root — some scans may be limited. Run with
+                            <code>sudo</code> for full access.</span>
+                        <button class="root-warning__dismiss" id="rootWarningDismiss" title="Dismiss">✕</button>
+                    </div>
                     <button class="btn btn--ghost" id="settingsBtn" type="button" aria-label="AI Settings"
                         title="AI Settings">
                         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">

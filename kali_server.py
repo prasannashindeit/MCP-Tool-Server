@@ -104,7 +104,7 @@ mcp_client = MCPClient()
 # Configuration
 API_PORT = int(os.environ.get("API_PORT", 5000))
 DEBUG_MODE = os.environ.get("DEBUG_MODE", "0").lower() in ("1", "true", "yes", "y")
-COMMAND_TIMEOUT = 180  # 5 minutes default timeout
+COMMAND_TIMEOUT = 300  # 5 minutes default timeout
 
 app = Flask(__name__)
 
@@ -196,6 +196,7 @@ class CommandExecutor:
             success = True if self.timed_out and (self.stdout_data or self.stderr_data) else (self.return_code == 0)
             
             return {
+                "command": self.command,
                 "stdout": self.stdout_data,
                 "stderr": self.stderr_data,
                 "return_code": self.return_code,
@@ -208,6 +209,7 @@ class CommandExecutor:
             logger.error(f"Error executing command: {str(e)}")
             logger.error(traceback.format_exc())
             return {
+                "command": self.command,
                 "stdout": self.stdout_data,
                 "stderr": f"Error executing command: {str(e)}\n{self.stderr_data}",
                 "return_code": -1,
@@ -270,8 +272,18 @@ def nmap():
             logger.warning("Nmap called without target parameter")
             return jsonify({
                 "error": "Target parameter is required"
-            }), 400        
-        
+            }), 400
+
+        # Auto-detect privilege level — SYN scans need root
+        is_root = os.geteuid() == 0
+        if not is_root:
+            # Replace privileged scan types with unprivileged alternatives
+            privileged_flags = ['-sS', '-sA', '-sW', '-sM', '-sN', '-sF', '-sX', '-sO']
+            for flag in privileged_flags:
+                if flag in scan_type:
+                    scan_type = scan_type.replace(flag, '-sT')
+                    logger.info(f"Not running as root — replaced {flag} with -sT (TCP connect)")
+
         command = f"nmap {scan_type}"
 
         if timing:
@@ -640,7 +652,8 @@ def health_check():
         "status": "healthy",
         "message": "PenForge Security API Server is running",
         "tools_status": tools_status,
-        "all_essential_tools_available": all_essential_tools_available
+        "all_essential_tools_available": all_essential_tools_available,
+        "running_as_root": os.geteuid() == 0
     }
     _health_cache["data"] = payload
     _health_cache["time"] = now
